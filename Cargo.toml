@@ -1,0 +1,15 @@
+[package]
+name = "egui_test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.28.1"
+egui_extras = { version = "0.28.1", features = ["all_loaders"]}
+image = { version = "0.25", features = ["jpeg", "png"]}
+env_logger = "0.11.5"
+reqwest = { version = "0.12.7", features = ["json"] }
+tokio = { version = "1.39.3", features = ["full"]}
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+dotenvy = "0.15.7"
