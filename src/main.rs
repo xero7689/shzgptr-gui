@@ -40,7 +40,7 @@ enum Role {
 }
 
 #[derive(Clone, Debug)]
-struct MessageDisplayItem {
+struct Message {
     role: Role,
     message: String,
 }
@@ -50,7 +50,7 @@ struct MyApp {
     assistant_prompt: Arc<Mutex<String>>,
     llm_client_triggered: Arc<Mutex<bool>>,
     openai_api_key: String,
-    chat_history: Vec<MessageDisplayItem>,
+    chat_history: Vec<Message>,
 }
 
 impl Default for MyApp {
@@ -61,11 +61,11 @@ impl Default for MyApp {
             llm_client_triggered: Arc::new(Mutex::new(false)),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set"),
             chat_history: vec![
-                MessageDisplayItem {
+                Message {
                     role: Role::User,
                     message: "Hello!".to_string(),
                 },
-                MessageDisplayItem {
+                Message {
                     role: Role::Assistant,
                     message: "Hi! I'm a helpful assistant!\nHow can I help you?".to_string(),
                 },
@@ -127,7 +127,7 @@ impl eframe::App for MyApp {
         if let Ok(mut prompt) = self.assistant_prompt.lock() {
             if !prompt.is_empty() && self.chat_history.last().unwrap().role != Role::Assistant {
                 println!("Found Assistant Prompt is not empty");
-                let assistant_message = MessageDisplayItem {
+                let assistant_message = Message {
                     role: Role::Assistant,
                     message: prompt.clone(),
                 };
@@ -144,13 +144,49 @@ impl eframe::App for MyApp {
                     egui::Frame::default().show(ui, |ui| {
                         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
                         for item in &self.chat_history {
-                            let role = match item.role {
-                                Role::User => "User",
-                                Role::Assistant => "Assistant",
+                            let (fill_color, layout) = match item.role {
+                                Role::User => (
+                                    egui::Color32::from_rgba_unmultiplied(92, 84, 112, 128),
+                                    egui::Layout::top_down(egui::Align::Max),
+                                ),
+                                Role::Assistant => (
+                                    egui::Color32::from_rgba_unmultiplied(53, 47, 68, 128),
+                                    egui::Layout::top_down(egui::Align::Min),
+                                ),
                             };
-                            let text = format!("{}: {}", role, item.message);
-                            ui.label(egui::RichText::new(text).code());
-                            ui.separator();
+                            let text = format!("{}", item.message);
+
+                            ui.with_layout(layout, |ui| {
+                                egui::Frame::default()
+                                    .rounding(ui.visuals().widgets.noninteractive.rounding)
+                                    .show(ui, |ui| {
+                                        let frame = egui::Frame {
+                                            inner_margin: 12.0.into(),
+                                            outer_margin: 12.0.into(),
+                                            rounding: 14.0.into(),
+                                            shadow: egui::Shadow {
+                                                offset: [4.0, 8.0].into(),
+                                                blur: 16.0,
+                                                spread: 0.0,
+                                                color: egui::Color32::from_black_alpha(180),
+                                            },
+                                            fill: fill_color,
+                                            stroke: egui::Stroke::new(
+                                                0.0,
+                                                egui::Color32::from_rgba_unmultiplied(
+                                                    219, 216, 227, 128,
+                                                ),
+                                            ),
+                                        };
+                                        frame.show(ui, |ui| {
+                                            //ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+                                            ui.label(
+                                                egui::RichText::new(text)
+                                                    .color(egui::Color32::WHITE),
+                                            );
+                                        });
+                                    });
+                            });
                         }
                     });
                 })
@@ -164,7 +200,7 @@ impl eframe::App for MyApp {
                     .labelled_by(prompt_label.id);
 
                 if ui.button("Send").clicked() {
-                    let user_message = MessageDisplayItem {
+                    let user_message = Message {
                         role: Role::User,
                         message: self.user_prompt.to_string(),
                     };
