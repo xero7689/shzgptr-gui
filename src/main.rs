@@ -5,6 +5,7 @@ pub mod openai;
 
 use dotenvy::dotenv;
 use eframe::egui;
+use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::{env, thread};
 
@@ -32,11 +33,24 @@ async fn main() -> eframe::Result {
     )
 }
 
+#[derive(Clone, PartialEq, Debug)]
+enum Role {
+    User,
+    Assistant,
+}
+
+#[derive(Clone, Debug)]
+struct MessageDisplayItem {
+    role: Role,
+    message: String,
+}
+
 struct MyApp {
     user_prompt: String,
     assistant_prompt: Arc<Mutex<String>>,
     llm_client_triggered: Arc<Mutex<bool>>,
     openai_api_key: String,
+    chat_history: Vec<MessageDisplayItem>,
 }
 
 impl Default for MyApp {
@@ -46,7 +60,27 @@ impl Default for MyApp {
             assistant_prompt: Arc::new(Mutex::new("".to_string())),
             llm_client_triggered: Arc::new(Mutex::new(false)),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set"),
+            chat_history: vec![
+                MessageDisplayItem {
+                    role: Role::User,
+                    message: "Hello!".to_string(),
+                },
+                MessageDisplayItem {
+                    role: Role::Assistant,
+                    message: "Hi! I'm a helpful assistant!\nHow can I help you?".to_string(),
+                },
+            ],
         }
+    }
+}
+
+impl fmt::Display for MyApp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "User Prompt: {}\nAssistant Prompt: {:?}\nLLM Triggered: {:?}\nChat History: {:?}",
+            self.user_prompt, self.assistant_prompt, self.llm_client_triggered, self.chat_history
+        )
     }
 }
 
@@ -89,14 +123,37 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Check if assistant_prompt has been updated by the thread
+        if let Ok(mut prompt) = self.assistant_prompt.lock() {
+            if !prompt.is_empty() && self.chat_history.last().unwrap().role != Role::Assistant {
+                println!("Found Assistant Prompt is not empty");
+                let assistant_message = MessageDisplayItem {
+                    role: Role::Assistant,
+                    message: prompt.clone(),
+                };
+                self.chat_history.push(assistant_message);
+                prompt.clear();
+
+                println!("My App State: {}", self);
+            }
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label(format!("Assistant Prompt",));
-            ui.vertical(|ui| {
-                egui::Frame::default().show(ui, |ui| {
-                    ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
-                    let text = self.assistant_prompt.lock().unwrap().clone();
-                    ui.label(egui::RichText::new(text).code());
-                });
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.vertical(|ui| {
+                    egui::Frame::default().show(ui, |ui| {
+                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
+                        for item in &self.chat_history {
+                            let role = match item.role {
+                                Role::User => "User",
+                                Role::Assistant => "Assistant",
+                            };
+                            let text = format!("{}: {}", role, item.message);
+                            ui.label(egui::RichText::new(text).code());
+                            ui.separator();
+                        }
+                    });
+                })
             })
         });
 
@@ -107,6 +164,11 @@ impl eframe::App for MyApp {
                     .labelled_by(prompt_label.id);
 
                 if ui.button("Send").clicked() {
+                    let user_message = MessageDisplayItem {
+                        role: Role::User,
+                        message: self.user_prompt.to_string(),
+                    };
+                    self.chat_history.push(user_message);
                     self.trigger_llm_client();
                 }
             });
