@@ -1,5 +1,5 @@
 [package]
-name = "egui_test"
+name = "shzgptr-gui"
 version = "0.1.0"
 edition = "2021"
 
