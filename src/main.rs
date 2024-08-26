@@ -60,16 +60,7 @@ impl Default for MyApp {
             assistant_prompt: Arc::new(Mutex::new("".to_string())),
             llm_client_triggered: Arc::new(Mutex::new(false)),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set"),
-            chat_history: vec![
-                Message {
-                    role: Role::User,
-                    message: "Hello!".to_string(),
-                },
-                Message {
-                    role: Role::Assistant,
-                    message: "Hi! I'm a helpful assistant!\nHow can I help you?".to_string(),
-                },
-            ],
+            chat_history: vec![],
         }
     }
 }
@@ -97,8 +88,6 @@ impl MyApp {
             let openai_api_key = self.openai_api_key.clone();
 
             thread::spawn(move || {
-                println!("Function Triggered in a seprate thread!");
-
                 let llm_client = OpenAIClient {
                     api_key: openai_api_key,
                     model_id: "gpt-4o-mini".into(),
@@ -194,19 +183,27 @@ impl eframe::App for MyApp {
         });
 
         egui::TopBottomPanel::bottom("footer").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                let prompt_label = ui.label("User prompt: ");
-                ui.text_edit_singleline(&mut self.user_prompt)
-                    .labelled_by(prompt_label.id);
+            let mut layout = egui::Layout::top_down_justified(egui::Align::Center);
+            layout.cross_justify = true;
 
-                if ui.button("Send").clicked() {
-                    let user_message = Message {
-                        role: Role::User,
-                        message: self.user_prompt.to_string(),
-                    };
-                    self.chat_history.push(user_message);
-                    self.trigger_llm_client();
-                }
+            ui.horizontal(|ui| {
+                ui.with_layout(layout, |ui| {
+                    ui.text_edit_singleline(&mut self.user_prompt);
+
+                    if ui.button("Send").clicked() {
+                        if self.user_prompt.is_empty() {
+                            return;
+                        }
+
+                        let user_message = Message {
+                            role: Role::User,
+                            message: self.user_prompt.to_string(),
+                        };
+                        self.chat_history.push(user_message);
+                        self.trigger_llm_client();
+                        self.user_prompt.clear();
+                    }
+                });
             });
         });
     }
