@@ -2,7 +2,7 @@ use std::sync::mpsc;
 use std::thread;
 use tokio::runtime::Runtime;
 
-use structs::{ChatCompletionsRequest, ChatCompletionsResponse, Message};
+use structs::{ChatCompletionsRequest, ChatCompletionsResponse, Message, Role};
 
 pub mod structs;
 
@@ -60,7 +60,8 @@ impl OpenAIClient {
 
     pub fn chat_completions_in_thread(
         &self,
-        user_message: String,
+        messages: Vec<Message>,
+        system_prompt: Option<String>,
     ) -> Result<ChatCompletionsResponse, reqwest::Error> {
         let (tx, rx) = mpsc::channel();
 
@@ -73,7 +74,7 @@ impl OpenAIClient {
             let rt = Runtime::new().unwrap();
             let result = rt.block_on(async {
                 let client = OpenAIClient::new(api_key, model_id, max_tokens, temperature);
-                client.chat_completions(user_message).await
+                client.chat_completions(messages, system_prompt).await
             });
             tx.send(result).unwrap();
         });
@@ -84,18 +85,25 @@ impl OpenAIClient {
 
     pub async fn chat_completions(
         &self,
-        user_message: String,
+        mut messages: Vec<Message>,
+        system_prompt: Option<String>,
     ) -> Result<ChatCompletionsResponse, reqwest::Error> {
-        let messages = vec![
-            Message {
-                role: "system".into(),
-                content: DEFAULT_SYSTEM_PROMPT.into(),
-            },
-            Message {
-                role: "user".into(),
-                content: user_message,
-            },
-        ];
+        match system_prompt {
+            Some(prompt) => {
+                let system_message = Message {
+                    role: Role::System,
+                    content: prompt,
+                };
+                messages.insert(0, system_message);
+            }
+            None => {
+                let system_message = Message {
+                    role: Role::System,
+                    content: DEFAULT_SYSTEM_PROMPT.into(),
+                };
+                messages.insert(0, system_message);
+            }
+        }
 
         let request = ChatCompletionsRequest {
             model: self.model_id.to_string(),
@@ -103,6 +111,7 @@ impl OpenAIClient {
             max_tokens: self.model_config.max_tokens,
             temperature: self.model_config.temperature,
         };
+
         let response_json = reqwest::Client::new()
             .post("https://api.openai.com/v1/chat/completions")
             .json(&request)

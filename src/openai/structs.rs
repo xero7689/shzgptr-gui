@@ -2,9 +2,17 @@ use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    User,
+    System,
+    Assistant,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Message {
-    pub role: String,
+    pub role: Role,
     pub content: String,
 }
 
