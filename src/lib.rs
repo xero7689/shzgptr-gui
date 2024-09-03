@@ -13,6 +13,8 @@ pub struct MyApp {
     llm_client_triggered: Arc<Mutex<bool>>,
     openai_api_key: String,
     chat_history: Vec<Message>,
+    system_prompt: String,
+    max_tokens: i32,
     temperature: f32,
 }
 
@@ -24,7 +26,9 @@ impl Default for MyApp {
             llm_client_triggered: Arc::new(Mutex::new(false)),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set"),
             chat_history: vec![],
+            system_prompt: "You are a helpful assistant.".to_string(),
             temperature: 1.0,
+            max_tokens: 1024,
         }
     }
 }
@@ -47,14 +51,16 @@ impl MyApp {
             *triggered = true;
 
             let llm_client_triggered = Arc::clone(&self.llm_client_triggered);
-            let system_prompt = "You are a helpful assistant.".to_string();
-            let chat_history = self.chat_history.clone();
-            let assistant_prompt = Arc::clone(&self.assistant_prompt);
             let openai_api_key = self.openai_api_key.clone();
+            let system_prompt = self.system_prompt.clone();
+            let chat_history = self.chat_history.clone();
             let temperature = self.temperature;
+            let max_tokens = self.max_tokens;
+            let assistant_prompt = Arc::clone(&self.assistant_prompt);
 
             thread::spawn(move || {
-                let llm_client = OpenAIClient::new(openai_api_key, None, None, Some(temperature));
+                let llm_client =
+                    OpenAIClient::new(openai_api_key, None, Some(max_tokens), Some(temperature));
 
                 if let Ok(response) =
                     llm_client.chat_completions_in_thread(chat_history, Some(system_prompt))
@@ -101,8 +107,18 @@ impl eframe::App for MyApp {
         egui::SidePanel::right("right_panel")
             .resizable(false)
             .show(ctx, |ui| {
+                ui.label("System Prompt");
+                ui.add(egui::TextEdit::singleline(&mut self.system_prompt));
+
+                ui.separator();
+
                 ui.label("Temperature");
                 ui.add(egui::Slider::new(&mut self.temperature, 0.0..=2.0).text("Temperature"));
+
+                ui.separator();
+
+                ui.label("Max Tokens");
+                ui.add(egui::Slider::new(&mut self.max_tokens, 0..=1024).text("Max Tokens"));
             });
 
         egui::TopBottomPanel::bottom("footer").show(ctx, |ui| {
