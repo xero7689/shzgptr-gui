@@ -13,6 +13,7 @@ pub struct MyApp {
     llm_client_triggered: Arc<Mutex<bool>>,
     openai_api_key: String,
     chat_history: Vec<Message>,
+    temperature: f32,
 }
 
 impl Default for MyApp {
@@ -23,6 +24,7 @@ impl Default for MyApp {
             llm_client_triggered: Arc::new(Mutex::new(false)),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set"),
             chat_history: vec![],
+            temperature: 1.0,
         }
     }
 }
@@ -49,11 +51,14 @@ impl MyApp {
             let chat_history = self.chat_history.clone();
             let assistant_prompt = Arc::clone(&self.assistant_prompt);
             let openai_api_key = self.openai_api_key.clone();
+            let temperature = self.temperature;
 
             thread::spawn(move || {
-                let llm_client = OpenAIClient::new(openai_api_key, None, None, None);
+                let llm_client = OpenAIClient::new(openai_api_key, None, None, Some(temperature));
 
-                if let Ok(response) = llm_client.chat_completions_in_thread(chat_history, Some(system_prompt)) {
+                if let Ok(response) =
+                    llm_client.chat_completions_in_thread(chat_history, Some(system_prompt))
+                {
                     let assistant_message = response.choices[0].message.content.clone();
                     println!("Assistant Prompt: {}", assistant_message);
 
@@ -90,6 +95,38 @@ impl eframe::App for MyApp {
         egui::TopBottomPanel::top("header").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("SHZ-GPT-R - OpenAI Chatbot");
+            });
+        });
+
+        egui::SidePanel::right("right_panel")
+            .resizable(false)
+            .show(ctx, |ui| {
+                ui.label("Temperature");
+                ui.add(egui::Slider::new(&mut self.temperature, 0.0..=2.0).text("Temperature"));
+            });
+
+        egui::TopBottomPanel::bottom("footer").show(ctx, |ui| {
+            let mut layout = egui::Layout::top_down_justified(egui::Align::Center);
+            layout.cross_justify = true;
+
+            ui.horizontal(|ui| {
+                ui.with_layout(layout, |ui| {
+                    ui.text_edit_singleline(&mut self.user_prompt);
+
+                    if ui.button("Send").clicked() {
+                        if self.user_prompt.is_empty() {
+                            return;
+                        }
+
+                        let user_message = Message {
+                            role: Role::User,
+                            content: self.user_prompt.to_string(),
+                        };
+                        self.chat_history.push(user_message);
+                        self.trigger_llm_client();
+                        self.user_prompt.clear();
+                    }
+                });
             });
         });
 
@@ -150,31 +187,6 @@ impl eframe::App for MyApp {
                     });
                 })
             })
-        });
-
-        egui::TopBottomPanel::bottom("footer").show(ctx, |ui| {
-            let mut layout = egui::Layout::top_down_justified(egui::Align::Center);
-            layout.cross_justify = true;
-
-            ui.horizontal(|ui| {
-                ui.with_layout(layout, |ui| {
-                    ui.text_edit_singleline(&mut self.user_prompt);
-
-                    if ui.button("Send").clicked() {
-                        if self.user_prompt.is_empty() {
-                            return;
-                        }
-
-                        let user_message = Message {
-                            role: Role::User,
-                            content: self.user_prompt.to_string(),
-                        };
-                        self.chat_history.push(user_message);
-                        self.trigger_llm_client();
-                        self.user_prompt.clear();
-                    }
-                });
-            });
         });
     }
 }
