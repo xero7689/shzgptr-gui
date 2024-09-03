@@ -62,6 +62,7 @@ impl OpenAIClient {
             model: self.model_id.clone(),
             messages,
             max_tokens: 1024,
+            temperature: 1.0,
         };
         let response_json = reqwest::Client::new()
             .post("https://api.openai.com/v1/chat/completions")

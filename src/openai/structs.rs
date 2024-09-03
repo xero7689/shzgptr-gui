@@ -13,6 +13,7 @@ pub struct ChatCompletionsRequest {
     pub model: String,
     pub messages: Vec<Message>,
     pub max_tokens: i32,
+    pub temperature: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
