@@ -61,10 +61,7 @@ impl MyApp {
             let openai_api_key = self.openai_api_key.clone();
 
             thread::spawn(move || {
-                let llm_client = OpenAIClient {
-                    api_key: openai_api_key,
-                    model_id: "gpt-4o-mini".into(),
-                };
+                let llm_client = OpenAIClient::new(openai_api_key, None, None, None);
 
                 if let Ok(response) = llm_client.chat_completions_in_thread(user_prompt) {
                     let assistant_message = response.choices[0].message.content.clone();
