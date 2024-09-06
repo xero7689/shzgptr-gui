@@ -37,7 +37,7 @@ impl MessageBox {
         self.frame.show(ui, |ui| {
             ui.label(
                 egui::RichText::new(text)
-                    .color(Color32::WHITE)
+                    .color(Color32::from_rgb(250, 240, 230))
                     .font(self.font_id.clone()),
             );
         });
