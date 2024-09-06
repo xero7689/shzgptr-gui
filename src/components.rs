@@ -1,13 +1,18 @@
 use eframe::egui;
 use egui::Color32;
 
+use crate::markdown::{parse_markdown, Block, BlockType};
+
 pub struct MessageBox {
     pub frame: egui::Frame,
     font_id: egui::FontId,
+    text_blocks: Vec<Block>,
 }
 
 impl MessageBox {
-    pub fn new(fill_color: Color32) -> Self {
+    pub fn new(text: &String, fill_color: Color32) -> Self {
+        let text_blocks = parse_markdown(text);
+
         Self {
             frame: egui::Frame {
                 inner_margin: 12.0.into(),
@@ -25,21 +30,41 @@ impl MessageBox {
                     egui::Color32::from_rgba_unmultiplied(219, 216, 227, 128),
                 ),
             },
-
             font_id: egui::FontId {
-                size: 16.0,
+                size: 14.0,
                 family: egui::FontFamily::Monospace,
             },
+            text_blocks,
         }
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, text: &str) {
+    pub fn show(&mut self, ui: &mut egui::Ui) {
         self.frame.show(ui, |ui| {
-            ui.label(
-                egui::RichText::new(text)
-                    .color(Color32::from_rgb(250, 240, 230))
-                    .font(self.font_id.clone()),
-            );
+            for block in &self.text_blocks {
+                // We use the reference to the text_block
+                match &block.block_type {
+                    // So we can only match the reference to the block_type,
+                    // otherwise the String would be moved which is not allowed
+                    BlockType::Text => {
+                        ui.label(
+                            egui::RichText::new(block.content.clone())
+                                .color(Color32::from_rgb(250, 240, 230))
+                                .font(self.font_id.clone()),
+                        );
+                    }
+                    BlockType::Code(language) => {
+                        let theme =
+                            egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
+
+                        egui_extras::syntax_highlighting::code_view_ui(
+                            ui,
+                            &theme,
+                            &block.content,
+                            language,
+                        );
+                    }
+                };
+            }
         });
     }
 }

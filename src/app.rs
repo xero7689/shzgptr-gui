@@ -182,7 +182,7 @@ impl eframe::App for MyApp {
                                 egui::Frame::default()
                                     .rounding(ui.visuals().widgets.noninteractive.rounding)
                                     .show(ui, |ui| {
-                                        MessageBox::new(fill_color).show(ui, &text);
+                                        MessageBox::new(&text, fill_color).show(ui);
                                     });
                             });
                         }
