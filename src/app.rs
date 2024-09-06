@@ -98,8 +98,20 @@ impl eframe::App for MyApp {
         }
 
         egui::TopBottomPanel::top("header").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("SHZ-GPT-R - OpenAI Chatbot");
+            egui::menu::bar(ui, |ui| {
+                let is_web = cfg!(target_arch = "wasm32");
+                if !is_web {
+                    ui.menu_button("File", |ui| {
+                        if ui.button("Quit").clicked() {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                    });
+                    ui.menu_button("Edit", |ui| {});
+                    ui.menu_button("View", |ui| {});
+                    ui.menu_button("History", |ui| {});
+                    ui.menu_button("Help", |ui| {});
+                    ui.add_space(16.0);
+                }
             });
         });
 
