@@ -106,10 +106,10 @@ impl eframe::App for MyApp {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                     });
-                    ui.menu_button("Edit", |ui| {});
-                    ui.menu_button("View", |ui| {});
-                    ui.menu_button("History", |ui| {});
-                    ui.menu_button("Help", |ui| {});
+                    ui.menu_button("Edit", |_ui| {});
+                    ui.menu_button("View", |_ui| {});
+                    ui.menu_button("History", |_ui| {});
+                    ui.menu_button("Help", |_ui| {});
                     ui.add_space(16.0);
                 }
             });
@@ -119,7 +119,7 @@ impl eframe::App for MyApp {
             .resizable(false)
             .show(ctx, |ui| {
                 ui.label("System Prompt");
-                ui.add(egui::TextEdit::singleline(&mut self.system_prompt));
+                ui.add(egui::TextEdit::multiline(&mut self.system_prompt).hint_text("System Prompt"));
 
                 ui.separator();
 
