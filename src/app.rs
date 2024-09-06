@@ -166,18 +166,11 @@ impl eframe::App for MyApp {
                                 ),
                             };
                             let text = format!("{}", item.content);
-
                             ui.with_layout(layout, |ui| {
                                 egui::Frame::default()
                                     .rounding(ui.visuals().widgets.noninteractive.rounding)
                                     .show(ui, |ui| {
-                                        MessageBox::new(fill_color).frame.show(ui, |ui| {
-                                            //ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                                            ui.label(
-                                                egui::RichText::new(text)
-                                                    .color(egui::Color32::WHITE),
-                                            );
-                                        });
+                                        MessageBox::new(fill_color).show(ui, &text);
                                     });
                             });
                         }

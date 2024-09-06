@@ -3,6 +3,7 @@ use egui::Color32;
 
 pub struct MessageBox {
     pub frame: egui::Frame,
+    font_id: egui::FontId,
 }
 
 impl MessageBox {
@@ -24,6 +25,21 @@ impl MessageBox {
                     egui::Color32::from_rgba_unmultiplied(219, 216, 227, 128),
                 ),
             },
+
+            font_id: egui::FontId {
+                size: 16.0,
+                family: egui::FontFamily::Monospace,
+            },
         }
+    }
+
+    pub fn show(&mut self, ui: &mut egui::Ui, text: &str) {
+        self.frame.show(ui, |ui| {
+            ui.label(
+                egui::RichText::new(text)
+                    .color(Color32::WHITE)
+                    .font(self.font_id.clone()),
+            );
+        });
     }
 }
