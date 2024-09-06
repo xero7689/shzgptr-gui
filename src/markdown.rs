@@ -2,6 +2,7 @@
 pub enum BlockType {
     Text,
     Code(String), // Language of the code block, e.g., "rust"
+    Heading(i32), // Level of the heading, e.g., 1 for h1, 2 for h2, etc.
 }
 
 #[derive(Debug)]
@@ -33,6 +34,13 @@ pub fn parse_markdown(input: &str) -> Vec<Block> {
                 is_code_block = true;
                 code_lang = line.trim().trim_start_matches("```").to_string();
             }
+        } else if line.starts_with('#') {
+            // Heading
+            let level = line.chars().take_while(|c| *c == '#').count() as i32;
+            blocks.push(Block {
+                block_type: BlockType::Heading(level),
+                content: line.trim().trim_start_matches('#').trim().to_string(),
+            });
         } else if is_code_block {
             current_block.push_str(line);
             current_block.push('\n');

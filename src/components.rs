@@ -63,6 +63,32 @@ impl MessageBox {
                             language,
                         );
                     }
+                    BlockType::Heading(level) => {
+                        let heading = match level {
+                            1 => egui::FontId {
+                                size: 24.0,
+                                family: egui::FontFamily::Proportional,
+                            },
+                            2 => egui::FontId {
+                                size: 20.0,
+                                family: egui::FontFamily::Proportional,
+                            },
+                            3 => egui::FontId {
+                                size: 16.0,
+                                family: egui::FontFamily::Proportional,
+                            },
+                            _ => egui::FontId {
+                                size: 14.0,
+                                family: egui::FontFamily::Proportional,
+                            },
+                        };
+
+                        ui.label(
+                            egui::RichText::new(block.content.clone())
+                                .color(Color32::from_rgb(250, 240, 230))
+                                .font(heading),
+                        );
+                    }
                 };
             }
         });
