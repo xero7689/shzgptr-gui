@@ -1,4 +1,4 @@
-use crate::components::MessageBox;
+use crate::components::message_box::MessageBox;
 use crate::openai::structs::{Message, Role};
 use crate::openai::OpenAIClient;
 use eframe::egui;
@@ -65,7 +65,6 @@ impl MyApp {
                     llm_client.chat_completions_in_thread(chat_history, Some(system_prompt))
                 {
                     let assistant_message = response.choices[0].message.content.clone();
-                    println!("Assistant Prompt: {}", assistant_message);
 
                     let mut prompt = assistant_prompt.lock().unwrap();
                     *prompt = assistant_message;
@@ -85,15 +84,12 @@ impl eframe::App for MyApp {
         // Check if assistant_prompt has been updated by the thread
         if let Ok(mut prompt) = self.assistant_prompt.lock() {
             if !prompt.is_empty() && self.chat_history.last().unwrap().role != Role::Assistant {
-                println!("Found Assistant Prompt is not empty");
                 let assistant_message = Message {
                     role: Role::Assistant,
                     content: prompt.clone(),
                 };
                 self.chat_history.push(assistant_message);
                 prompt.clear();
-
-                println!("My App State: {}", self);
             }
         }
 
@@ -119,7 +115,9 @@ impl eframe::App for MyApp {
             .resizable(false)
             .show(ctx, |ui| {
                 ui.label("System Prompt");
-                ui.add(egui::TextEdit::multiline(&mut self.system_prompt).hint_text("System Prompt"));
+                ui.add(
+                    egui::TextEdit::multiline(&mut self.system_prompt).hint_text("System Prompt"),
+                );
 
                 ui.separator();
 
